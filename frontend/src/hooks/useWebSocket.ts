@@ -56,10 +56,12 @@ export function useWebSocket(roomId: number) {
     };
   }, [roomId, accessToken]);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback((content: string): boolean => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "message", content }));
+      return true;
     }
+    return false;
   }, []);
 
   const sendTyping = useCallback((isTyping: boolean) => {

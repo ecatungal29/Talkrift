@@ -5,7 +5,7 @@ import { use } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { getMessages, getRooms } from "@/api/chat";
+import { getMessages, getRooms, createMessage } from "@/api/chat";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -27,6 +27,8 @@ export default function ChatPage({ params }: Props) {
     setActiveRoom,
     setRooms,
     addMessage,
+    replaceMessage,
+    updateLastMessage,
   } = useChatStore();
   const user = useAuthStore((s) => s.user);
   const { sendMessage, sendTyping } = useWebSocket(roomId);
@@ -75,20 +77,39 @@ export default function ChatPage({ params }: Props) {
   }, [roomId, nextCursor, loadingMore, prependMessages]);
 
   const handleSend = useCallback(
-    (content: string) => {
+    async (content: string) => {
       if (!user) return;
-      // Optimistic insert — shows message immediately before WS echo
+      const tempId = -Date.now();
+      // Optimistic insert — shows message immediately
       addMessage({
-        id: -Date.now(), // negative temp ID, replaced when WS echoes back
+        id: tempId,
         room: roomId,
         sender: user,
         content,
         message_type: "text",
         created_at: new Date().toISOString(),
       });
-      sendMessage(content);
+      // Try WebSocket first; fall back to REST if not connected
+      const sentViaWs = sendMessage(content);
+      if (!sentViaWs) {
+        try {
+          const msg = await createMessage(roomId, content);
+          replaceMessage(tempId, msg);
+          updateLastMessage(roomId, msg);
+        } catch {
+          // Remove the failed optimistic message
+          replaceMessage(tempId, {
+            id: tempId,
+            room: roomId,
+            sender: user,
+            content: `[failed] ${content}`,
+            message_type: "text",
+            created_at: new Date().toISOString(),
+          });
+        }
+      }
     },
-    [user, roomId, addMessage, sendMessage]
+    [user, roomId, addMessage, sendMessage, replaceMessage, updateLastMessage]
   );
 
   if (!user) return null;

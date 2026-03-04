@@ -31,3 +31,14 @@ export async function createOrGetDmRoom(otherUserId: number): Promise<Room> {
   });
   return data;
 }
+
+export async function createMessage(
+  roomId: number,
+  content: string
+): Promise<Message> {
+  const { data } = await apiClient.post<Message>(
+    `/chat/rooms/${roomId}/messages/`,
+    { content, message_type: "text" }
+  );
+  return data;
+}
