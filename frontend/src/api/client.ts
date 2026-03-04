@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const { refreshToken, setAccessToken, clearAuth } =
+    const { refreshToken, setAccessToken, setRefreshToken, clearAuth } =
       useAuthStore.getState();
 
     if (!refreshToken) {
@@ -75,6 +75,7 @@ apiClient.interceptors.response.use(
       });
       const newAccess: string = data.access;
       setAccessToken(newAccess);
+      if (data.refresh) setRefreshToken(data.refresh);
       processQueue(null, newAccess);
       originalRequest.headers = {
         ...originalRequest.headers,

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { ContactsPanel } from "@/components/contacts/ContactsPanel";
+import { ChatsPanel } from "@/components/chat/ChatsPanel";
 
 type View = "chats" | "contacts";
 
@@ -48,7 +50,7 @@ export default function Sidebar() {
       {/* Nav tabs */}
       <div className="flex border-b border-border">
         <button
-          onClick={() => setView("chats")}
+          onClick={() => { setView("chats"); setSearch(""); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${
             view === "chats"
               ? "text-primary border-b-2 border-primary"
@@ -59,7 +61,7 @@ export default function Sidebar() {
           Chats
         </button>
         <button
-          onClick={() => setView("contacts")}
+          onClick={() => { setView("contacts"); setSearch(""); }}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors ${
             view === "contacts"
               ? "text-primary border-b-2 border-primary"
@@ -82,19 +84,11 @@ export default function Sidebar() {
       </div>
 
       {/* List area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-h-0">
         {view === "chats" ? (
-          <EmptyState
-            icon={<MessageSquare className="h-8 w-8 text-muted-foreground" />}
-            text="No chats yet"
-            sub="Add contacts to start messaging"
-          />
+          <ChatsPanel searchQuery={search} />
         ) : (
-          <EmptyState
-            icon={<Users className="h-8 w-8 text-muted-foreground" />}
-            text="No contacts"
-            sub="Search to find and add people"
-          />
+          <ContactsPanel searchQuery={search} />
         )}
       </div>
 
@@ -189,20 +183,3 @@ export default function Sidebar() {
   );
 }
 
-function EmptyState({
-  icon,
-  text,
-  sub,
-}: {
-  icon: React.ReactNode;
-  text: string;
-  sub: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-2 py-12 px-4 text-center">
-      {icon}
-      <p className="text-sm font-medium text-foreground">{text}</p>
-      <p className="text-xs text-muted-foreground">{sub}</p>
-    </div>
-  );
-}
