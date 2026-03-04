@@ -1,3 +1,5 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.response import Response
@@ -90,4 +92,35 @@ class MessageListView(APIView):
         serializer = MessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         message = serializer.save(room=room, sender=request.user)
-        return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
+        data = MessageSerializer(message).data
+
+        # Broadcast to connected WS clients (REST fallback path)
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"chat_{room_id}",
+                {
+                    "type": "chat.message",
+                    "message": {
+                        "id": message.id,
+                        "content": message.content,
+                        "message_type": message.message_type,
+                        "created_at": message.created_at.isoformat(),
+                        "room": room_id,
+                        "sender": {
+                            "id": request.user.id,
+                            "email": request.user.email,
+                            "display_name": request.user.display_name,
+                            "avatar": (
+                                request.user.avatar.url
+                                if request.user.avatar
+                                else None
+                            ),
+                        },
+                    },
+                },
+            )
+        except Exception:
+            pass  # channel layer unavailable; client will see it via REST response
+
+        return Response(data, status=status.HTTP_201_CREATED)

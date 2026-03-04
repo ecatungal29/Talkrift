@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 
@@ -9,6 +9,8 @@ const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
 export function useWebSocket(roomId: number) {
   const wsRef = useRef<WebSocket | null>(null);
   const accessToken = useAuthStore((s) => s.accessToken);
+  // Incrementing this forces the effect to re-run → reconnect
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!accessToken || !roomId) return;
@@ -23,9 +25,12 @@ export function useWebSocket(roomId: number) {
         if (data.type === "message") {
           const msg: import("@/store/chatStore").Message = data.message;
           const currentUser = useAuthStore.getState().user;
-          // If this is our own message, replace the optimistic entry instead of duplicating
+          const roomMsgs = store.messages[msg.room] ?? [];
+
           if (currentUser && msg.sender.id === currentUser.id) {
-            const roomMsgs = store.messages[msg.room] ?? [];
+            // Check if already added via REST response (real ID already in store)
+            if (roomMsgs.some((m) => m.id === msg.id)) return;
+            // Otherwise find and replace the optimistic entry
             let tempId: number | undefined;
             for (let i = roomMsgs.length - 1; i >= 0; i--) {
               if (roomMsgs[i].id < 0 && roomMsgs[i].content === msg.content) {
@@ -39,6 +44,8 @@ export function useWebSocket(roomId: number) {
               store.addMessage(msg);
             }
           } else {
+            // For the receiver: skip if we somehow already have this message
+            if (roomMsgs.some((m) => m.id === msg.id)) return;
             store.addMessage(msg);
           }
           store.updateLastMessage(msg.room, msg);
@@ -50,11 +57,17 @@ export function useWebSocket(roomId: number) {
       }
     };
 
+    ws.onclose = (e) => {
+      // Codes 1000 (normal), 4001 (unauthenticated), 4003 (forbidden) — don't retry
+      if (e.code === 1000 || e.code === 4001 || e.code === 4003) return;
+      setTimeout(() => setRetryCount((n) => n + 1), 3000);
+    };
+
     return () => {
-      ws.close();
+      ws.close(1000);
       wsRef.current = null;
     };
-  }, [roomId, accessToken]);
+  }, [roomId, accessToken, retryCount]);
 
   const sendMessage = useCallback((content: string): boolean => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
