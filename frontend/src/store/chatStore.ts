@@ -73,11 +73,18 @@ export const useChatStore = create<ChatState>((set) => ({
     })),
 
   updateLastMessage: (roomId, message) =>
-    set((state) => ({
-      rooms: state.rooms.map((r) =>
+    set((state) => {
+      const rooms = state.rooms.map((r) =>
         r.id === roomId ? { ...r, last_message: message } : r
-      ),
-    })),
+      );
+      // Bubble the updated room to the top (most recent first)
+      const idx = rooms.findIndex((r) => r.id === roomId);
+      if (idx > 0) {
+        const [room] = rooms.splice(idx, 1);
+        rooms.unshift(room);
+      }
+      return { rooms };
+    }),
 
   replaceMessage: (tempId, message) =>
     set((state) => {

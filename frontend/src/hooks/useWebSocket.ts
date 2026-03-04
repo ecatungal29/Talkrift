@@ -48,7 +48,7 @@ export function useWebSocket(roomId: number) {
             if (roomMsgs.some((m) => m.id === msg.id)) return;
             store.addMessage(msg);
           }
-          store.updateLastMessage(msg.room, msg);
+          store.updateLastMessage(Number(msg.room), msg);
         } else if (data.type === "typing") {
           store.setTyping(roomId, data.user_id, data.display_name, data.is_typing);
         }
