@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Frontend (`frontend/`)
+
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
@@ -19,6 +20,7 @@ npm run type-check   # TypeScript check (tsc --noEmit)
 ```
 
 ### Backend (`backend/`)
+
 ```bash
 python manage.py runserver              # Dev server (HTTP only)
 daphne -b 0.0.0.0 -p 8000 project.asgi:application  # Dev with WebSocket support
@@ -29,6 +31,7 @@ pytest                                  # Run tests
 ## Architecture
 
 ### Frontend Structure (`frontend/src/`)
+
 - `api/client.ts` — Centralized HTTP client: auto-injects `Authorization: Bearer <token>`, handles 401 → silent token refresh → retry original request
 - `app/(auth)/` — Login and register pages (unprotected routes)
 - `app/(main)/` — Dashboard, chat, calls (protected routes via Next.js middleware)
@@ -42,6 +45,7 @@ pytest                                  # Run tests
 - `store/` — Zustand stores for auth, chat, and call state
 
 ### Backend Structure (`backend/`)
+
 - `apps/accounts/` — Custom User model, JWT auth endpoints, Google OAuth (verifies token against Google's userinfo endpoint)
 - `apps/chat/` — Room + Message models, DRF views with cursor-based pagination
 - `apps/calls/` — Call session tracking
@@ -51,19 +55,45 @@ pytest                                  # Run tests
 - `routing.py` — Django Channels WebSocket URL routing
 
 ### Real-time Architecture
+
 - Redis acts as the Django Channels channel layer (pub/sub broker)
 - Frontend uses native WebSocket API (not a library)
 - WebRTC signaling flow: Caller → `SignalingConsumer` → Callee for offer/answer exchange, then both peers exchange ICE candidates directly through the signaling server
 
 ### Auth Flow
+
 - JWT: 60-min access token, 1-day refresh token with rotation; logout blacklists the refresh token
 - Google OAuth: frontend receives Google token → sends to backend → backend verifies against `https://www.googleapis.com/oauth2/v3/userinfo`
 - Protected routes enforced by Next.js middleware (not just client-side redirects)
 
 ## UI Design Conventions
+
 - **Colors:** Primary accent `#DC2626` (deep crimson red) on dark background `#0F0F0F`
 - **Animations:** Framer Motion for message slide-in, call modal entrance, sidebar transitions
 - **Layout:** Fixed sidebar + main chat panel + floating call overlay
 
 ## Build Order (for new features)
+
 Auth → Contacts → Chat (REST) → Chat (WebSocket) → Presence → Video calls → Polish
+
+If you encounter any issues, about Redis connection, try this on Windows users:
+
+Why it stops working
+
+- redis-cli isn’t a Windows executable, it’s a Linux one.
+- When you close PowerShell, you exit WSL, so Windows can’t see redis-cli.
+- That’s why you get the “not recognized” error again.
+  How to use Redis again
+- Open WSL again
+- In PowerShell or Command Prompt, type:
+  wsl
+- This drops you back into your Ubuntu/Debian shell.
+- Start Redis server (if not already running)
+  Inside WSL:
+  sudo service redis-server start
+- or
+  redis-server --daemonize yes
+- Run the CLI
+  redis-cli ping
+
+- You should see PONG.
