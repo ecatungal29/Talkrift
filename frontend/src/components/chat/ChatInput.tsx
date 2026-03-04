@@ -25,6 +25,7 @@ export function ChatInput({ onSend, onTyping }: Props) {
 		if (!trimmed) return;
 		onSend(trimmed);
 		setValue("");
+		setShowEmojiPicker(false);
 		if (isTypingRef.current) {
 			onTyping(false);
 			isTypingRef.current = false;
