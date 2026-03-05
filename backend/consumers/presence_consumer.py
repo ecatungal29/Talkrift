@@ -9,6 +9,9 @@ def _presence_group(user_id):
     return f"user_presence_{user_id}"
 
 
+CALL_TYPES = frozenset({"call_invite", "call_accept", "call_reject", "call_end"})
+
+
 class PresenceConsumer(AsyncWebsocketConsumer):
     """
     Global presence WebSocket — one persistent connection per logged-in user.
@@ -16,21 +19,17 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     Client connects to: ws://.../ws/presence/?token=<access_token>
 
     Outbound message types (server → client):
-      { "type": "presence", "user_id": ..., "is_online": true/false }
+      { "type": "presence",    "user_id": ..., "is_online": true/false }
+      { "type": "call_invite", "from_user": {...}, "room_id": ... }
+      { "type": "call_accept", "from_user": {...}, "room_id": ... }
+      { "type": "call_reject", "from_user": {...} }
+      { "type": "call_end",    "from_user": {...} }
 
-    On connect:
-      - Mark the user online in the DB
-      - Join own presence group  (user_presence_<self.user.id>)
-      - Join each contact's presence group  (user_presence_<contact_id>)
-        so this connection receives future presence events from those contacts
-      - Broadcast own online status to own presence group
-        (contacts who are already connected will receive it)
-      - Send a snapshot of each contact's current is_online value
-        directly to this connection
-
-    On disconnect:
-      - Mark the user offline / update last_seen
-      - Broadcast own offline status to own presence group
+    Inbound call signal types (client → server, targeted relay):
+      { "type": "call_invite", "to_user": <id>, "room_id": <id> }
+      { "type": "call_accept", "to_user": <id>, "room_id": <id> }
+      { "type": "call_reject", "to_user": <id> }
+      { "type": "call_end",    "to_user": <id> }
     """
 
     async def connect(self):
@@ -68,6 +67,35 @@ class PresenceConsumer(AsyncWebsocketConsumer):
                 json.dumps({"type": "presence", "user_id": user_id, "is_online": is_online})
             )
 
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except json.JSONDecodeError:
+            return
+
+        event_type = data.get("type")
+        if event_type not in CALL_TYPES:
+            return
+
+        to_user = data.get("to_user")
+        if not to_user:
+            return
+
+        await self.channel_layer.group_send(
+            _presence_group(to_user),
+            {
+                "type": "presence.update",
+                "signal_type": event_type,
+                "from_user": {
+                    "id": self.user.id,
+                    "display_name": self.user.display_name,
+                    "email": self.user.email,
+                    "avatar": self.user.avatar.url if self.user.avatar else None,
+                },
+                "room_id": data.get("room_id"),
+            },
+        )
+
     async def disconnect(self, code):
         if not hasattr(self, "own_group"):
             return
@@ -87,16 +115,27 @@ class PresenceConsumer(AsyncWebsocketConsumer):
     # ── Channel-layer event handler ────────────────────────────────────────────
 
     async def presence_update(self, event):
-        """Forward a presence event from the channel layer to the WebSocket client."""
-        await self.send(
-            json.dumps(
-                {
-                    "type": "presence",
-                    "user_id": event["user_id"],
-                    "is_online": event["is_online"],
-                }
+        """Forward a presence or call-signal event to the WebSocket client."""
+        if "signal_type" in event:
+            # Call signal targeted at this user
+            payload = {
+                "type": event["signal_type"],
+                "from_user": event["from_user"],
+            }
+            if event.get("room_id") is not None:
+                payload["room_id"] = event["room_id"]
+            await self.send(json.dumps(payload))
+        else:
+            # Presence update
+            await self.send(
+                json.dumps(
+                    {
+                        "type": "presence",
+                        "user_id": event["user_id"],
+                        "is_online": event["is_online"],
+                    }
+                )
             )
-        )
 
     # ── DB helpers ─────────────────────────────────────────────────────────────
 
