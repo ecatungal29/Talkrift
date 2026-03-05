@@ -29,6 +29,7 @@ interface ContactsState {
     userId: number,
     relationship: UserSearchResult["relationship"]
   ) => void;
+  updateOnlineStatus: (userId: number, isOnline: boolean) => void;
 }
 
 export const useContactsStore = create<ContactsState>((set) => ({
@@ -72,6 +73,13 @@ export const useContactsStore = create<ContactsState>((set) => ({
     set((state) => ({
       searchResults: state.searchResults.map((r) =>
         r.id === userId ? { ...r, relationship } : r
+      ),
+    })),
+
+  updateOnlineStatus: (userId, isOnline) =>
+    set((state) => ({
+      contacts: state.contacts.map((c) =>
+        c.user.id === userId ? { ...c, is_online: isOnline } : c
       ),
     })),
 }));

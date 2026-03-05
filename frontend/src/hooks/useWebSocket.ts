@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
+import { useContactsStore } from "@/store/contactsStore";
 
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
 
@@ -55,6 +56,8 @@ export function useWebSocket(roomId: number) {
           store.setTyping(roomId, data.user_id, data.display_name, data.is_typing);
         } else if (data.type === "read_receipt") {
           store.markMessageRead(data.message_id, data.user_id);
+        } else if (data.type === "presence") {
+          useContactsStore.getState().updateOnlineStatus(data.user_id, data.is_online);
         }
       } catch {
         // ignore parse errors
