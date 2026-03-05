@@ -132,5 +132,6 @@ CORS_ALLOWED_ORIGINS = config(
 ).split(",")
 CORS_ALLOW_CREDENTIALS = True
 
-# Google OAuth token verification endpoint (handles GSI ID tokens)
+# Google OAuth
 GOOGLE_TOKENINFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo"
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")

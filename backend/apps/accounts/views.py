@@ -74,6 +74,12 @@ class GoogleAuthView(APIView):
             return Response({"detail": "Invalid Google token."}, status=status.HTTP_400_BAD_REQUEST)
 
         google_data = resp.json()
+
+        # Verify the token was issued for our app (prevents token substitution attacks)
+        expected_client_id = settings.GOOGLE_CLIENT_ID
+        if expected_client_id and google_data.get("aud") != expected_client_id:
+            return Response({"detail": "Invalid Google token audience."}, status=status.HTTP_400_BAD_REQUEST)
+
         email = google_data.get("email")
         if not email:
             return Response({"detail": "Email not available from Google."}, status=status.HTTP_400_BAD_REQUEST)
