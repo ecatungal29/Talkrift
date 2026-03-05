@@ -6,9 +6,10 @@ interface Props {
 	message: Message;
 	isOwn: boolean;
 	showSender?: boolean;
+	isSeen?: boolean;
 }
 
-export function MessageBubble({ message, isOwn, showSender = false }: Props) {
+export function MessageBubble({ message, isOwn, showSender = false, isSeen = false }: Props) {
 	const initials = message.sender.display_name
 		.split(" ")
 		.map((n) => n[0])
@@ -24,8 +25,7 @@ export function MessageBubble({ message, isOwn, showSender = false }: Props) {
 	const parsedContent = parseEmoticons(message.content);
 
 	return (
-		<div
-			className={`flex gap-2 items-end ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
+		<div className={`flex gap-2 items-end ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
 			{!isOwn && (
 				<Avatar className="h-7 w-7 flex-shrink-0">
 					<AvatarImage src={message.sender.avatar ?? undefined} />
@@ -34,10 +34,7 @@ export function MessageBubble({ message, isOwn, showSender = false }: Props) {
 					</AvatarFallback>
 				</Avatar>
 			)}
-			<div
-				className={`flex flex-col gap-0.5 max-w-[70%] ${
-					isOwn ? "items-end" : "items-start"
-				}`}>
+			<div className={`flex flex-col gap-0.5 max-w-[70%] ${isOwn ? "items-end" : "items-start"}`}>
 				{showSender && !isOwn && (
 					<span className="text-xs text-muted-foreground px-1">
 						{message.sender.display_name}
@@ -45,13 +42,18 @@ export function MessageBubble({ message, isOwn, showSender = false }: Props) {
 				)}
 				<div
 					className={`rounded-2xl px-3 py-2 text-sm break-words ${
-						isOwn ?
-							"bg-primary text-primary-foreground rounded-br-sm"
-						:	"bg-accent text-foreground rounded-bl-sm"
+						isOwn
+							? "bg-primary text-primary-foreground rounded-br-sm"
+							: "bg-accent text-foreground rounded-bl-sm"
 					}`}>
 					{parsedContent}
 				</div>
-				<span className="text-[10px] text-muted-foreground px-1">{time}</span>
+				<div className="flex items-center gap-1 px-1">
+					<span className="text-[10px] text-muted-foreground">{time}</span>
+					{isOwn && isSeen && (
+						<span className="text-[10px] text-primary font-medium">· Seen</span>
+					)}
+				</div>
 			</div>
 		</div>
 	);

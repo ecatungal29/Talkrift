@@ -9,14 +9,16 @@ const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
 export function useWebSocket(roomId: number) {
   const wsRef = useRef<WebSocket | null>(null);
   const accessToken = useAuthStore((s) => s.accessToken);
-  // Incrementing this forces the effect to re-run → reconnect
   const [retryCount, setRetryCount] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     if (!accessToken || !roomId) return;
 
     const ws = new WebSocket(`${WS_BASE}/ws/chat/${roomId}/?token=${accessToken}`);
     wsRef.current = ws;
+
+    ws.onopen = () => setIsConnected(true);
 
     ws.onmessage = (event) => {
       try {
@@ -51,6 +53,8 @@ export function useWebSocket(roomId: number) {
           store.updateLastMessage(Number(msg.room), msg);
         } else if (data.type === "typing") {
           store.setTyping(roomId, data.user_id, data.display_name, data.is_typing);
+        } else if (data.type === "read_receipt") {
+          store.markMessageRead(data.message_id, data.user_id);
         }
       } catch {
         // ignore parse errors
@@ -58,7 +62,7 @@ export function useWebSocket(roomId: number) {
     };
 
     ws.onclose = (e) => {
-      // Codes 1000 (normal), 4001 (unauthenticated), 4003 (forbidden) — don't retry
+      setIsConnected(false);
       if (e.code === 1000 || e.code === 4001 || e.code === 4003) return;
       setTimeout(() => setRetryCount((n) => n + 1), 3000);
     };
@@ -91,5 +95,5 @@ export function useWebSocket(roomId: number) {
     }
   }, []);
 
-  return { sendMessage, sendTyping, sendReadReceipt };
+  return { sendMessage, sendTyping, sendReadReceipt, isConnected };
 }

@@ -85,6 +85,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "message_type": message.message_type,
                     "created_at": message.created_at.isoformat(),
                     "room": self.room_id,
+                    "read_by_ids": [self.user.id],
                     "sender": {
                         "id": self.user.id,
                         "email": self.user.email,

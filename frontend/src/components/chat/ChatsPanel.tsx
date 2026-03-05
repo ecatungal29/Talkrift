@@ -81,6 +81,12 @@ export function ChatsPanel({ searchQuery }: Props) {
 						})
 					:	"";
 
+				// Unread: last message from someone else and current user not in read_by_ids
+				const isUnread =
+					!!lastMsg &&
+					lastMsg.sender.id !== user?.id &&
+					!(lastMsg.read_by_ids ?? []).includes(user?.id ?? -1);
+
 				return (
 					<button
 						key={`${room.id}-${lastMsg?.created_at || ""}`}
@@ -96,15 +102,22 @@ export function ChatsPanel({ searchQuery }: Props) {
 						</Avatar>
 						<div className="flex-1 min-w-0">
 							<div className="flex items-center justify-between gap-1">
-								<p className="text-sm font-medium truncate">{displayName}</p>
-								{time && (
-									<span className="text-[10px] text-muted-foreground flex-shrink-0">
-										{time}
-									</span>
-								)}
+								<p className={`text-sm truncate ${isUnread ? "font-semibold text-foreground" : "font-medium"}`}>
+									{displayName}
+								</p>
+								<div className="flex items-center gap-1.5 flex-shrink-0">
+									{time && (
+										<span className={`text-[10px] ${isUnread ? "text-primary font-medium" : "text-muted-foreground"}`}>
+											{time}
+										</span>
+									)}
+									{isUnread && (
+										<span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+									)}
+								</div>
 							</div>
 							{lastMsg && (
-								<p className="text-xs text-muted-foreground truncate">
+								<p className={`text-xs truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>
 									{lastMsg.sender.id === user?.id ? "You: " : ""}
 									{lastMsg.content}
 								</p>

@@ -7,11 +7,15 @@ from .models import Message, Room
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
+    read_by_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ("id", "room", "sender", "content", "message_type", "file", "created_at")
-        read_only_fields = ("id", "room", "sender", "created_at")
+        fields = ("id", "room", "sender", "content", "message_type", "file", "created_at", "read_by_ids")
+        read_only_fields = ("id", "room", "sender", "created_at", "read_by_ids")
+
+    def get_read_by_ids(self, obj):
+        return list(obj.read_by.values_list("id", flat=True))
 
 
 class RoomSerializer(serializers.ModelSerializer):

@@ -31,7 +31,7 @@ export default function ChatPage({ params }: Props) {
     updateLastMessage,
   } = useChatStore();
   const user = useAuthStore((s) => s.user);
-  const { sendMessage, sendTyping } = useWebSocket(roomId);
+  const { sendMessage, sendTyping, sendReadReceipt, isConnected } = useWebSocket(roomId);
 
   const room = rooms.find((r) => r.id === roomId);
   const roomMessages = messages[roomId] ?? [];
@@ -41,6 +41,15 @@ export default function ChatPage({ params }: Props) {
     undefined
   );
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Send read receipt for the last message whenever WS connects or a new message arrives
+  useEffect(() => {
+    if (!isConnected || !user || !roomMessages.length) return;
+    const last = roomMessages[roomMessages.length - 1];
+    if (last.sender.id !== user.id && last.id > 0) {
+      sendReadReceipt(last.id);
+    }
+  }, [isConnected, roomMessages.length, roomId]);
 
   // Load rooms if not already in store (e.g. direct URL navigation)
   useEffect(() => {
@@ -88,6 +97,7 @@ export default function ChatPage({ params }: Props) {
         content,
         message_type: "text",
         created_at: new Date().toISOString(),
+        read_by_ids: [user.id],
       });
       // Try WebSocket first; fall back to REST if not connected
       const sentViaWs = sendMessage(content);
@@ -105,6 +115,7 @@ export default function ChatPage({ params }: Props) {
             content: `[failed] ${content}`,
             message_type: "text",
             created_at: new Date().toISOString(),
+            read_by_ids: [user.id],
           });
         }
       }

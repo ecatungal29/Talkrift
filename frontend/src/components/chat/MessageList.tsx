@@ -59,6 +59,15 @@ export function MessageList({
     }
   }, [hasMore, onLoadMore]);
 
+  // Find the last own message that has been seen by at least one other person
+  const lastSeenOwnMsgId = messages
+    .filter(
+      (m) =>
+        m.sender.id === currentUserId &&
+        m.read_by_ids?.some((id) => id !== currentUserId)
+    )
+    .at(-1)?.id;
+
   return (
     <div
       ref={containerRef}
@@ -77,6 +86,7 @@ export function MessageList({
           message={msg}
           isOwn={msg.sender.id === currentUserId}
           showSender={isGroup}
+          isSeen={msg.id === lastSeenOwnMsgId}
         />
       ))}
 

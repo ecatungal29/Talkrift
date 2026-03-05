@@ -107,6 +107,7 @@ class MessageListView(APIView):
                         "message_type": message.message_type,
                         "created_at": message.created_at.isoformat(),
                         "room": room_id,
+                        "read_by_ids": [request.user.id],
                         "sender": {
                             "id": request.user.id,
                             "email": request.user.email,

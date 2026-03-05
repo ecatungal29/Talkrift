@@ -17,6 +17,7 @@ export interface Message {
   content: string;
   message_type: "text" | "image" | "file";
   created_at: string;
+  read_by_ids: number[];
 }
 
 interface TypingUser {
@@ -37,6 +38,7 @@ interface ChatState {
   updateLastMessage: (roomId: number, message: Message) => void;
   replaceMessage: (tempId: number, message: Message) => void;
   setTyping: (roomId: number, userId: number, displayName: string, isTyping: boolean) => void;
+  markMessageRead: (messageId: number, userId: number) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -95,6 +97,33 @@ export const useChatStore = create<ChatState>((set) => ({
           ? [...roomMsgs.slice(0, idx), message, ...roomMsgs.slice(idx + 1)]
           : [...roomMsgs, message];
       return { messages: { ...state.messages, [message.room]: updated } };
+    }),
+
+  markMessageRead: (messageId, userId) =>
+    set((state) => {
+      let updatedMessages = state.messages;
+      let updatedRooms = state.rooms;
+
+      // Update in messages map
+      for (const [roomId, msgs] of Object.entries(state.messages)) {
+        const idx = msgs.findIndex((m) => m.id === messageId);
+        if (idx >= 0) {
+          const msg = msgs[idx];
+          if (msg.read_by_ids.includes(userId)) break;
+          const newMsg = { ...msg, read_by_ids: [...msg.read_by_ids, userId] };
+          const newMsgs = [...msgs.slice(0, idx), newMsg, ...msgs.slice(idx + 1)];
+          updatedMessages = { ...updatedMessages, [roomId]: newMsgs };
+          // Also update last_message in the room if it matches
+          updatedRooms = state.rooms.map((r) =>
+            r.last_message?.id === messageId
+              ? { ...r, last_message: newMsg }
+              : r
+          );
+          break;
+        }
+      }
+
+      return { messages: updatedMessages, rooms: updatedRooms };
     }),
 
   setTyping: (roomId, userId, displayName, isTyping) =>
