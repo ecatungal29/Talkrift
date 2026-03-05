@@ -58,9 +58,9 @@ export default function RegisterPage() {
     >
       {/* Logo */}
       <div className="text-center space-y-1">
-        <div className="inline-flex items-center gap-2">
+        <div className="inline-flex items-center ">
           <span className="text-3xl font-bold text-primary">T</span>
-          <span className="text-2xl font-bold text-foreground">alkrift</span>
+          <span className="text-2xl font-bold text-foreground">alk<span className="text-3xl font-bold text-primary">R</span>ift</span>
         </div>
         <p className="text-sm text-muted-foreground">Create your account</p>
       </div>

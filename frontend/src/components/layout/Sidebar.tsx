@@ -39,7 +39,7 @@ export default function Sidebar() {
 			<div className="flex items-center justify-between px-4 py-3 border-b border-border">
 				<div className="flex items-center gap-2">
 					<span className="text-lg font-bold">
-						<span className="text-primary">T</span>alkrift
+						<span className="text-primary">T</span>alk<span className="text-primary">R</span>ift
 					</span>
 				</div>
 				<Button
