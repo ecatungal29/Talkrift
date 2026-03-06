@@ -48,7 +48,7 @@ export function ChatHeader({ room, currentUser }: Props) {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card flex-shrink-0">
+    <div className="flex items-center gap-3 pl-14 md:pl-4 pr-4 py-3 border-b border-border bg-card flex-shrink-0">
       <div className="relative flex-shrink-0">
         <Avatar className="h-9 w-9">
           <AvatarImage src={other?.avatar ?? undefined} />

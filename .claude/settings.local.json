@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx shadcn@latest:*)",
       "mcp__plugin_playwright_playwright__browser_navigate",
-      "mcp__plugin_playwright_playwright__browser_console_messages"
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(claude mcp:*)",
+      "Bash(python -m json.tool)",
+      "Read(//c/Users/Ernz/**)"
     ]
   }
 }

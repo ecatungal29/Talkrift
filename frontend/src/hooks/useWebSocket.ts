@@ -30,6 +30,20 @@ export function useWebSocket(roomId: number) {
           const currentUser = useAuthStore.getState().user;
           const roomMsgs = store.messages[msg.room] ?? [];
 
+          // Browser notification when tab is hidden and message is from someone else
+          if (
+            currentUser &&
+            msg.sender.id !== currentUser.id &&
+            document.hidden &&
+            typeof Notification !== "undefined" &&
+            Notification.permission === "granted"
+          ) {
+            new Notification(msg.sender.display_name, {
+              body: msg.content,
+              icon: msg.sender.avatar ?? undefined,
+            });
+          }
+
           if (currentUser && msg.sender.id === currentUser.id) {
             // Check if already added via REST response (real ID already in store)
             if (roomMsgs.some((m) => m.id === msg.id)) return;
