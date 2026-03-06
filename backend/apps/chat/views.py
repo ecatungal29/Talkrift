@@ -79,7 +79,9 @@ class MessageListView(APIView):
 
         return Response(
             {
-                "messages": MessageSerializer(reversed(messages), many=True).data,
+                "messages": MessageSerializer(
+                    reversed(messages), many=True, context={"request": request}
+                ).data,
                 "next_cursor": next_cursor,
             }
         )
@@ -89,12 +91,26 @@ class MessageListView(APIView):
         if not room:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = MessageSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        message = serializer.save(room=room, sender=request.user)
-        data = MessageSerializer(message).data
+        uploaded_file = request.FILES.get("file")
+        if uploaded_file:
+            # Auto-detect message_type from MIME type
+            mime = uploaded_file.content_type or ""
+            message_type = "image" if mime.startswith("image/") else "file"
+            message = Message.objects.create(
+                room=room,
+                sender=request.user,
+                content=request.data.get("content", ""),
+                message_type=message_type,
+                file=uploaded_file,
+            )
+        else:
+            serializer = MessageSerializer(data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            message = serializer.save(room=room, sender=request.user)
 
-        # Broadcast to connected WS clients (REST fallback path)
+        data = MessageSerializer(message, context={"request": request}).data
+
+        # Broadcast to connected WS clients
         try:
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
@@ -105,9 +121,11 @@ class MessageListView(APIView):
                         "id": message.id,
                         "content": message.content,
                         "message_type": message.message_type,
+                        "file": request.build_absolute_uri(message.file.url) if message.file else None,
                         "created_at": message.created_at.isoformat(),
                         "room": room_id,
                         "read_by_ids": [request.user.id],
+                        "reactions": {},
                         "sender": {
                             "id": request.user.id,
                             "email": request.user.email,
@@ -122,6 +140,6 @@ class MessageListView(APIView):
                 },
             )
         except Exception:
-            pass  # channel layer unavailable; client will see it via REST response
+            pass
 
         return Response(data, status=status.HTTP_201_CREATED)

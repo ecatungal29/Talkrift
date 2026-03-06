@@ -54,3 +54,19 @@ export async function createMessage(
   );
   return data;
 }
+
+export async function createMessageWithFile(
+  roomId: number,
+  content: string,
+  file: File
+): Promise<Message> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (content.trim()) formData.append("content", content.trim());
+  const { data } = await apiClient.post<Message>(
+    `/chat/rooms/${roomId}/messages/`,
+    formData,
+    { headers: { "Content-Type": undefined } }
+  );
+  return data;
+}

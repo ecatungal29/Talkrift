@@ -5,7 +5,7 @@ import { use } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { getMessages, getRooms, createMessage } from "@/api/chat";
+import { getMessages, getRooms, createMessage, createMessageWithFile } from "@/api/chat";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -86,21 +86,53 @@ export default function ChatPage({ params }: Props) {
   }, [roomId, nextCursor, loadingMore, prependMessages]);
 
   const handleSend = useCallback(
-    async (content: string) => {
+    async (content: string, file?: File) => {
       if (!user) return;
       const tempId = -Date.now();
-      // Optimistic insert — shows message immediately
+
+      if (file) {
+        // File upload — always via REST, show optimistic preview
+        const isImage = file.type.startsWith("image/");
+        const previewUrl = isImage ? URL.createObjectURL(file) : null;
+        addMessage({
+          id: tempId,
+          room: roomId,
+          sender: user,
+          content,
+          message_type: isImage ? "image" : "file",
+          file: previewUrl,
+          created_at: new Date().toISOString(),
+          read_by_ids: [user.id],
+          reactions: {},
+        });
+        try {
+          const msg = await createMessageWithFile(roomId, content, file);
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          replaceMessage(tempId, msg);
+          updateLastMessage(roomId, msg);
+        } catch {
+          replaceMessage(tempId, {
+            id: tempId, room: roomId, sender: user,
+            content: `[failed] ${content}`, message_type: "text",
+            file: null, created_at: new Date().toISOString(),
+            read_by_ids: [user.id], reactions: {},
+          });
+        }
+        return;
+      }
+
+      // Text message — WS first, REST fallback
       addMessage({
         id: tempId,
         room: roomId,
         sender: user,
         content,
         message_type: "text",
+        file: null,
         created_at: new Date().toISOString(),
         read_by_ids: [user.id],
         reactions: {},
       });
-      // Try WebSocket first; fall back to REST if not connected
       const sentViaWs = sendMessage(content);
       if (!sentViaWs) {
         try {
@@ -108,16 +140,11 @@ export default function ChatPage({ params }: Props) {
           replaceMessage(tempId, msg);
           updateLastMessage(roomId, msg);
         } catch {
-          // Remove the failed optimistic message
           replaceMessage(tempId, {
-            id: tempId,
-            room: roomId,
-            sender: user,
-            content: `[failed] ${content}`,
-            message_type: "text",
-            created_at: new Date().toISOString(),
-            read_by_ids: [user.id],
-            reactions: {},
+            id: tempId, room: roomId, sender: user,
+            content: `[failed] ${content}`, message_type: "text",
+            file: null, created_at: new Date().toISOString(),
+            read_by_ids: [user.id], reactions: {},
           });
         }
       }

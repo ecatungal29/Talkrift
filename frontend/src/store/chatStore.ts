@@ -19,6 +19,7 @@ export interface Message {
   created_at: string;
   read_by_ids: number[];
   reactions: Record<string, number[]>;
+  file: string | null;
 }
 
 interface TypingUser {
@@ -94,6 +95,8 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => {
       const roomMsgs = state.messages[message.room] ?? [];
       const idx = roomMsgs.findIndex((m) => m.id === tempId);
+      // WS already replaced the optimistic entry — don't duplicate
+      if (idx < 0 && roomMsgs.some((m) => m.id === message.id)) return state;
       const updated =
         idx >= 0
           ? [...roomMsgs.slice(0, idx), message, ...roomMsgs.slice(idx + 1)]

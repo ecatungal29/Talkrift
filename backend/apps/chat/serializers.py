@@ -24,6 +24,13 @@ class MessageSerializer(serializers.ModelSerializer):
             result.setdefault(r.emoji, []).append(r.user_id)
         return result
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        if data.get("file") and request:
+            data["file"] = request.build_absolute_uri(data["file"])
+        return data
+
 
 class RoomSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, Download } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Message } from "@/store/chatStore";
 import { parseEmoticons } from "@/lib/emojiParser";
@@ -92,13 +93,43 @@ export function MessageBubble({
 				{/* Bubble + quick reaction picker side-by-side */}
 				<div className={`flex items-center gap-1.5 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
 					<div
-						className={`${bubbleRadius} px-3 py-2 text-sm break-words ${
-							isOwn
-								? "bg-primary text-zinc-900"
-								: "bg-[#363636] text-foreground"
+						className={`${bubbleRadius} text-sm break-words overflow-hidden ${
+							isOwn ? "bg-primary text-zinc-900" : "bg-[#363636] text-foreground"
 						}`}
 					>
-						{parsedContent}
+						{message.message_type === "image" && message.file ? (
+							<div>
+								<img
+									src={message.file}
+									alt="image"
+									className="max-w-[240px] max-h-[320px] object-cover"
+								/>
+								{message.content && (
+									<p className="px-3 py-1.5">{parsedContent}</p>
+								)}
+							</div>
+						) : message.message_type === "file" && message.file ? (
+							<a
+								href={message.file}
+								target="_blank"
+								rel="noopener noreferrer"
+								download
+								className="flex items-center gap-2 px-3 py-2 hover:opacity-80 transition-opacity"
+							>
+								<FileText className="h-8 w-8 flex-shrink-0 opacity-80" />
+								<div className="min-w-0">
+									<p className="text-xs font-medium truncate max-w-[160px]">
+										{message.file.split("/").pop()}
+									</p>
+									{message.content && (
+										<p className="text-xs opacity-70 truncate">{message.content}</p>
+									)}
+								</div>
+								<Download className="h-4 w-4 flex-shrink-0 opacity-60" />
+							</a>
+						) : (
+							<div className="px-3 py-2">{parsedContent}</div>
+						)}
 					</div>
 
 					{/* Quick reaction picker — appears on hover */}
