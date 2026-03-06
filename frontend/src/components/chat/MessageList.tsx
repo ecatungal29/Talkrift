@@ -14,6 +14,16 @@ interface Props {
   hasMore: boolean;
 }
 
+const GROUP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+function isSameGroup(a: Message, b: Message): boolean {
+  if (a.sender.id !== b.sender.id) return false;
+  const diff = Math.abs(
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+  return diff < GROUP_THRESHOLD_MS;
+}
+
 export function MessageList({
   messages,
   currentUserId,
@@ -26,10 +36,8 @@ export function MessageList({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScrollHeight = useRef(0);
   const isFirstLoad = useRef(true);
-  // Track which message IDs have already been rendered so only truly new ones animate
   const seenIds = useRef<Set<number>>(new Set());
 
-  // Scroll to bottom on first load and new messages from self
   useEffect(() => {
     if (isFirstLoad.current && messages.length > 0) {
       bottomRef.current?.scrollIntoView();
@@ -42,7 +50,6 @@ export function MessageList({
     }
   }, [messages.length, currentUserId]);
 
-  // Preserve scroll position when prepending older messages
   useEffect(() => {
     const el = containerRef.current;
     if (!el || isFirstLoad.current) return;
@@ -62,7 +69,6 @@ export function MessageList({
     }
   }, [hasMore, onLoadMore]);
 
-  // Find the last own message that has been seen by at least one other person
   const lastSeenOwnMsgId = messages
     .filter(
       (m) =>
@@ -75,7 +81,7 @@ export function MessageList({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2 min-h-0"
+      className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1 min-h-0"
     >
       {!hasMore && messages.length > 0 && (
         <p className="text-center text-xs text-muted-foreground py-2">
@@ -83,12 +89,19 @@ export function MessageList({
         </p>
       )}
 
-      {messages.map((msg) => {
+      {messages.map((msg, i) => {
+        const prev = i > 0 ? messages[i - 1] : null;
+        const next = i < messages.length - 1 ? messages[i + 1] : null;
+        const isFirstInGroup = !prev || !isSameGroup(prev, msg);
+        const isLastInGroup = !next || !isSameGroup(msg, next);
+
         const isNew = !seenIds.current.has(msg.id);
         seenIds.current.add(msg.id);
+
         return (
           <motion.div
             key={msg.id}
+            className={i > 0 && isFirstInGroup ? "mt-2" : undefined}
             initial={isNew ? { opacity: 0, y: 8 } : false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
@@ -96,8 +109,10 @@ export function MessageList({
             <MessageBubble
               message={msg}
               isOwn={msg.sender.id === currentUserId}
-              showSender={isGroup}
+              showSender={isGroup && isFirstInGroup}
               isSeen={msg.id === lastSeenOwnMsgId}
+              isFirstInGroup={isFirstInGroup}
+              isLastInGroup={isLastInGroup}
             />
           </motion.div>
         );
@@ -111,7 +126,7 @@ export function MessageList({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="flex items-center gap-2 pl-9"
+            className="flex items-center gap-2 pl-9 mt-1"
           >
             <div className="flex gap-1 items-center">
               <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]" />

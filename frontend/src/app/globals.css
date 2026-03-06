@@ -55,13 +55,13 @@
 :root {
   --radius: 0.625rem;
   /* Dark theme as default */
-  --background: #0f0f0f;
+  --background: #252525;
   --foreground: #fafafa;
   --card: #1a1a1a;
   --card-foreground: #fafafa;
   --popover: #1a1a1a;
   --popover-foreground: #fafafa;
-  --primary: #dc2626;
+  --primary: #F59E0B;
   --primary-foreground: #fafafa;
   --secondary: #1a1a1a;
   --secondary-foreground: #fafafa;
@@ -72,7 +72,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: #2a2a2a;
   --input: #2a2a2a;
-  --ring: #dc2626;
+  --ring: #F59E0B;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -80,26 +80,26 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: #111111;
   --sidebar-foreground: #fafafa;
-  --sidebar-primary: #dc2626;
+  --sidebar-primary: #F59E0B;
   --sidebar-primary-foreground: #fafafa;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #2a2a2a;
-  --sidebar-ring: #dc2626;
+  --sidebar-ring: #F59E0B;
   /* Custom brand tokens */
-  --brand: #dc2626;
+  --brand: #F59E0B;
   --brand-foreground: #fafafa;
   --surface: #1a1a1a;
 }
 
 .dark {
-  --background: #0f0f0f;
+  --background: #252525;
   --foreground: #fafafa;
   --card: #1a1a1a;
   --card-foreground: #fafafa;
   --popover: #1a1a1a;
   --popover-foreground: #fafafa;
-  --primary: #dc2626;
+  --primary: #F59E0B;
   --primary-foreground: #fafafa;
   --secondary: #1a1a1a;
   --secondary-foreground: #fafafa;
@@ -110,16 +110,16 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: #2a2a2a;
   --input: #2a2a2a;
-  --ring: #dc2626;
+  --ring: #F59E0B;
   --sidebar: #111111;
   --sidebar-foreground: #fafafa;
-  --sidebar-primary: #dc2626;
+  --sidebar-primary: #F59E0B;
   --sidebar-primary-foreground: #fafafa;
   --sidebar-accent: #1a1a1a;
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #2a2a2a;
-  --sidebar-ring: #dc2626;
-  --brand: #dc2626;
+  --sidebar-ring: #F59E0B;
+  --brand: #F59E0B;
   --brand-foreground: #fafafa;
   --surface: #1a1a1a;
 }
