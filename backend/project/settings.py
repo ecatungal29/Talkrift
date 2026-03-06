@@ -126,6 +126,11 @@ SIMPLE_JWT = {
     # If refresh token rotation causes auth issues, set ROTATE_REFRESH_TOKENS=False.
 }
 
+# TURN server config — optional, leave blank to use STUN-only
+TURN_URL = config("TURN_URL", default="")
+TURN_USERNAME = config("TURN_USERNAME", default="")
+TURN_CREDENTIAL = config("TURN_CREDENTIAL", default="")
+
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://127.0.0.1:3000",

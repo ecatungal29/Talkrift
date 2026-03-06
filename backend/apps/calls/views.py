@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import status
@@ -55,3 +56,24 @@ class CallSessionDetailView(APIView):
         call.status = new_status
         call.save()
         return Response(CallSessionSerializer(call).data)
+
+
+class IceServersView(APIView):
+    """GET /api/calls/ice-servers/ — return ICE server config for WebRTC."""
+
+    def get(self, request):
+        ice_servers = [
+            {"urls": "stun:stun.l.google.com:19302"},
+            {"urls": "stun:stun1.l.google.com:19302"},
+        ]
+
+        turn_url = settings.TURN_URL
+        if turn_url:
+            entry = {"urls": turn_url}
+            if settings.TURN_USERNAME:
+                entry["username"] = settings.TURN_USERNAME
+            if settings.TURN_CREDENTIAL:
+                entry["credential"] = settings.TURN_CREDENTIAL
+            ice_servers.append(entry)
+
+        return Response({"iceServers": ice_servers})

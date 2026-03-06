@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useCallStore } from "@/store/callStore";
+import { getIceServers } from "@/api/calls";
 
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8000";
 
-const ICE_SERVERS: RTCConfiguration = {
+const FALLBACK_ICE: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
@@ -30,7 +31,10 @@ export function useWebRTC(roomId: number, isCaller: boolean) {
     let cancelled = false;
 
     async function init() {
-      // 1. Get user media
+      // 1. Fetch ICE servers (STUN + optional TURN) from backend
+      const iceConfig = await getIceServers().catch(() => FALLBACK_ICE);
+
+      // 2. Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -42,21 +46,21 @@ export function useWebRTC(roomId: number, isCaller: boolean) {
       localStreamRef.current = stream;
       setLocalStream(stream);
 
-      // 2. Create peer connection
-      const pc = new RTCPeerConnection(ICE_SERVERS);
+      // 3. Create peer connection with fetched ICE config
+      const pc = new RTCPeerConnection(iceConfig);
       pcRef.current = pc;
 
-      // 3. Add local tracks
+      // 4. Add local tracks
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      // 4. Wire remote stream
+      // 5. Wire remote stream
       const remote = new MediaStream();
       setRemoteStream(remote);
       pc.ontrack = (e) => {
         e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
       };
 
-      // 5. Connect signaling WS
+      // 6. Connect signaling WS
       const ws = new WebSocket(
         `${WS_BASE}/ws/signal/${roomId}/?token=${accessToken}`
       );
