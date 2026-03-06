@@ -32,6 +32,18 @@ export async function createOrGetDmRoom(otherUserId: number): Promise<Room> {
   return data;
 }
 
+export async function createGroupRoom(
+  name: string,
+  participantIds: number[]
+): Promise<Room> {
+  const { data } = await apiClient.post<Room>("/chat/rooms/", {
+    room_type: "group",
+    name,
+    participant_ids: participantIds,
+  });
+  return data;
+}
+
 export async function createMessage(
   roomId: number,
   content: string

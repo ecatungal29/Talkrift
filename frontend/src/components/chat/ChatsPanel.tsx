@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { getRooms } from "@/api/chat";
+import { CreateGroupModal } from "./CreateGroupModal";
+import type { Room } from "@/store/chatStore";
 
 interface Props {
 	searchQuery: string;
@@ -18,6 +22,12 @@ export function ChatsPanel({ searchQuery }: Props) {
 	const activeRoomId = useChatStore((s) => s.activeRoomId);
 	const setRooms = useChatStore((s) => s.setRooms);
 	const user = useAuthStore((s) => s.user);
+	const [showCreateGroup, setShowCreateGroup] = useState(false);
+
+	const handleGroupCreated = (room: Room) => {
+		setRooms([room, ...rooms]);
+		router.push(`/chat/${room.id}`);
+	};
 
 	useEffect(() => {
 		getRooms()
@@ -35,23 +45,59 @@ export function ChatsPanel({ searchQuery }: Props) {
 		return room.name.toLowerCase().includes(q);
 	});
 
+	const newGroupButton = (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					variant="ghost"
+					size="icon"
+					className="h-6 w-6 text-muted-foreground hover:text-primary flex-shrink-0"
+					onClick={() => setShowCreateGroup(true)}
+				>
+					<Plus className="h-3.5 w-3.5" />
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent>New group</TooltipContent>
+		</Tooltip>
+	);
+
 	if (filtered.length === 0) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full gap-2 py-12 px-4 text-center">
-				<MessageSquare className="h-8 w-8 text-muted-foreground" />
-				<p className="text-sm font-medium">
-					{rooms.length === 0 ? "No chats yet" : "No results"}
-				</p>
-				<p className="text-xs text-muted-foreground">
-					{rooms.length === 0 ?
-						"Add contacts to start messaging"
-					:	"Try a different search"}
-				</p>
-			</div>
+			<>
+				<div className="flex items-center justify-between px-3 pt-1 pb-0.5">
+					<span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+						Groups
+					</span>
+					{newGroupButton}
+				</div>
+				<div className="flex flex-col items-center justify-center flex-1 gap-2 py-12 px-4 text-center">
+					<MessageSquare className="h-8 w-8 text-muted-foreground" />
+					<p className="text-sm font-medium">
+						{rooms.length === 0 ? "No chats yet" : "No results"}
+					</p>
+					<p className="text-xs text-muted-foreground">
+						{rooms.length === 0 ?
+							"Add contacts to start messaging"
+						:	"Try a different search"}
+					</p>
+				</div>
+				<CreateGroupModal
+					isOpen={showCreateGroup}
+					onClose={() => setShowCreateGroup(false)}
+					onCreated={handleGroupCreated}
+				/>
+			</>
 		);
 	}
 
 	return (
+		<>
+		<div className="flex items-center justify-between px-3 pt-1 pb-0.5">
+			<span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+				Groups
+			</span>
+			{newGroupButton}
+		</div>
 		<div className="flex-1 overflow-y-auto">
 			{filtered.map((room) => {
 				const other =
@@ -127,5 +173,11 @@ export function ChatsPanel({ searchQuery }: Props) {
 				);
 			})}
 		</div>
+		<CreateGroupModal
+			isOpen={showCreateGroup}
+			onClose={() => setShowCreateGroup(false)}
+			onCreated={handleGroupCreated}
+		/>
+		</>
 	);
 }
