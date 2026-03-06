@@ -70,6 +70,8 @@ export function useWebSocket(roomId: number) {
           store.setTyping(roomId, data.user_id, data.display_name, data.is_typing);
         } else if (data.type === "read_receipt") {
           store.markMessageRead(data.message_id, data.user_id);
+        } else if (data.type === "reaction") {
+          store.updateReaction(data.message_id, data.emoji, data.user_id, data.action);
         } else if (data.type === "presence") {
           useContactsStore.getState().updateOnlineStatus(data.user_id, data.is_online);
         }
@@ -112,5 +114,13 @@ export function useWebSocket(roomId: number) {
     }
   }, []);
 
-  return { sendMessage, sendTyping, sendReadReceipt, isConnected };
+  const sendReaction = useCallback((messageId: number, emoji: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({ type: "reaction", message_id: messageId, emoji })
+      );
+    }
+  }, []);
+
+  return { sendMessage, sendTyping, sendReadReceipt, sendReaction, isConnected };
 }

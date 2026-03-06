@@ -12,6 +12,7 @@ interface Props {
   typingNames: string[];
   onLoadMore: () => void;
   hasMore: boolean;
+  onReact: (messageId: number, emoji: string) => void;
 }
 
 const GROUP_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
@@ -31,6 +32,7 @@ export function MessageList({
   typingNames,
   onLoadMore,
   hasMore,
+  onReact,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,10 +111,12 @@ export function MessageList({
             <MessageBubble
               message={msg}
               isOwn={msg.sender.id === currentUserId}
+              currentUserId={currentUserId}
               showSender={isGroup && isFirstInGroup}
               isSeen={msg.id === lastSeenOwnMsgId}
               isFirstInGroup={isFirstInGroup}
               isLastInGroup={isLastInGroup}
+              onReact={onReact}
             />
           </motion.div>
         );

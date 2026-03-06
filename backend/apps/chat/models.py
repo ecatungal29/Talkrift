@@ -49,3 +49,19 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message {self.id} in Room {self.room_id}"
+
+
+class Reaction(models.Model):
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="reactions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reactions",
+    )
+    emoji = models.CharField(max_length=10)
+
+    class Meta:
+        unique_together = ("message", "user", "emoji")
+
+    def __str__(self):
+        return f"{self.user} reacted {self.emoji} to message {self.message_id}"

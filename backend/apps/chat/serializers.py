@@ -8,14 +8,21 @@ from .models import Message, Room
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     read_by_ids = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ("id", "room", "sender", "content", "message_type", "file", "created_at", "read_by_ids")
-        read_only_fields = ("id", "room", "sender", "created_at", "read_by_ids")
+        fields = ("id", "room", "sender", "content", "message_type", "file", "created_at", "read_by_ids", "reactions")
+        read_only_fields = ("id", "room", "sender", "created_at", "read_by_ids", "reactions")
 
     def get_read_by_ids(self, obj):
         return list(obj.read_by.values_list("id", flat=True))
+
+    def get_reactions(self, obj):
+        result = {}
+        for r in obj.reactions.all():
+            result.setdefault(r.emoji, []).append(r.user_id)
+        return result
 
 
 class RoomSerializer(serializers.ModelSerializer):

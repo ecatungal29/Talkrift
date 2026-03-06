@@ -31,7 +31,7 @@ export default function ChatPage({ params }: Props) {
     updateLastMessage,
   } = useChatStore();
   const user = useAuthStore((s) => s.user);
-  const { sendMessage, sendTyping, sendReadReceipt, isConnected } = useWebSocket(roomId);
+  const { sendMessage, sendTyping, sendReadReceipt, sendReaction, isConnected } = useWebSocket(roomId);
 
   const room = rooms.find((r) => r.id === roomId);
   const roomMessages = messages[roomId] ?? [];
@@ -98,6 +98,7 @@ export default function ChatPage({ params }: Props) {
         message_type: "text",
         created_at: new Date().toISOString(),
         read_by_ids: [user.id],
+        reactions: {},
       });
       // Try WebSocket first; fall back to REST if not connected
       const sentViaWs = sendMessage(content);
@@ -116,6 +117,7 @@ export default function ChatPage({ params }: Props) {
             message_type: "text",
             created_at: new Date().toISOString(),
             read_by_ids: [user.id],
+            reactions: {},
           });
         }
       }
@@ -143,6 +145,7 @@ export default function ChatPage({ params }: Props) {
         typingNames={typingList}
         onLoadMore={handleLoadMore}
         hasMore={!!nextCursor}
+        onReact={sendReaction}
       />
       <ChatInput onSend={handleSend} onTyping={sendTyping} />
     </div>

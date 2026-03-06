@@ -18,6 +18,7 @@ export interface Message {
   message_type: "text" | "image" | "file";
   created_at: string;
   read_by_ids: number[];
+  reactions: Record<string, number[]>;
 }
 
 interface TypingUser {
@@ -39,6 +40,7 @@ interface ChatState {
   replaceMessage: (tempId: number, message: Message) => void;
   setTyping: (roomId: number, userId: number, displayName: string, isTyping: boolean) => void;
   markMessageRead: (messageId: number, userId: number) => void;
+  updateReaction: (messageId: number, emoji: string, userId: number, action: "add" | "remove") => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -138,5 +140,25 @@ export const useChatStore = create<ChatState>((set) => ({
             : filtered,
         },
       };
+    }),
+
+  updateReaction: (messageId, emoji, userId, action) =>
+    set((state) => {
+      for (const [roomId, msgs] of Object.entries(state.messages)) {
+        const idx = msgs.findIndex((m) => m.id === messageId);
+        if (idx < 0) continue;
+        const msg = msgs[idx];
+        const current = msg.reactions[emoji] ?? [];
+        const updated =
+          action === "add"
+            ? current.includes(userId) ? current : [...current, userId]
+            : current.filter((id) => id !== userId);
+        const newReactions = { ...msg.reactions, [emoji]: updated };
+        if (updated.length === 0) delete newReactions[emoji];
+        const newMsg = { ...msg, reactions: newReactions };
+        const newMsgs = [...msgs.slice(0, idx), newMsg, ...msgs.slice(idx + 1)];
+        return { messages: { ...state.messages, [roomId]: newMsgs } };
+      }
+      return state;
     }),
 }));

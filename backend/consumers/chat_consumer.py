@@ -15,12 +15,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
       { "type": "message",      "content": "..." }
       { "type": "typing",       "is_typing": true/false }
       { "type": "read_receipt", "message_id": 123 }
+      { "type": "reaction",    "message_id": 123, "emoji": "👍" }
 
     Outbound message types (server → client):
       { "type": "message",  "message": {...} }
       { "type": "typing",   "user_id": ..., "display_name": ..., "is_typing": ... }
       { "type": "read_receipt", "user_id": ..., "message_id": ... }
       { "type": "presence", "user_id": ..., "is_online": ... }
+      { "type": "reaction", "message_id": ..., "emoji": ..., "user_id": ..., "action": "add"|"remove" }
     """
 
     # ── Connection lifecycle ───────────────────────────────────────────────────
@@ -65,6 +67,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self._handle_typing(data)
         elif event_type == "read_receipt":
             await self._handle_read_receipt(data)
+        elif event_type == "reaction":
+            await self._handle_reaction(data)
 
     # ── Inbound handlers ──────────────────────────────────────────────────────
 
@@ -86,6 +90,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "created_at": message.created_at.isoformat(),
                     "room": self.room_id,
                     "read_by_ids": [self.user.id],
+                    "reactions": {},
                     "sender": {
                         "id": self.user.id,
                         "email": self.user.email,
@@ -121,6 +126,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             },
         )
 
+    async def _handle_reaction(self, data):
+        message_id = data.get("message_id")
+        emoji = (data.get("emoji") or "").strip()
+        if not message_id or not emoji:
+            return
+        action = await self._toggle_reaction(message_id, emoji)
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                "type": "chat.reaction",
+                "message_id": message_id,
+                "emoji": emoji,
+                "user_id": self.user.id,
+                "action": action,
+            },
+        )
+
     # ── Channel-layer event handlers (group_send → send) ──────────────────────
 
     async def chat_message(self, event):
@@ -152,6 +174,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         )
 
+    async def chat_reaction(self, event):
+        await self.send(
+            json.dumps(
+                {
+                    "type": "reaction",
+                    "message_id": event["message_id"],
+                    "emoji": event["emoji"],
+                    "user_id": event["user_id"],
+                    "action": event["action"],
+                }
+            )
+        )
+
     async def chat_presence(self, event):
         await self.send(
             json.dumps(
@@ -177,6 +212,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         room = Room.objects.get(pk=self.room_id)
         return Message.objects.create(room=room, sender=self.user, content=content)
+
+    @database_sync_to_async
+    def _toggle_reaction(self, message_id: int, emoji: str) -> str:
+        from apps.chat.models import Reaction
+
+        reaction, created = Reaction.objects.get_or_create(
+            message_id=message_id,
+            user=self.user,
+            emoji=emoji,
+        )
+        if not created:
+            reaction.delete()
+            return "remove"
+        return "add"
 
     @database_sync_to_async
     def _mark_read(self, message_id: int):
