@@ -7,9 +7,13 @@ import { Check, X } from "lucide-react";
 import type { FriendRequest } from "@/types/contacts";
 import type { User } from "@/store/authStore";
 
+const itemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.2 } },
+};
+
 interface IncomingRequestItemProps {
   request: FriendRequest;
-  index: number;
   onAccept: (requestId: number, fromUser: User) => void;
   onReject: (requestId: number) => void;
 }
@@ -25,16 +29,13 @@ function getInitials(name: string) {
 
 export function IncomingRequestItem({
   request,
-  index,
   onAccept,
   onReject,
 }: IncomingRequestItemProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
+      variants={itemVariants}
       exit={{ opacity: 0, height: 0, overflow: "hidden" }}
-      transition={{ delay: index * 0.04, duration: 0.2 }}
       className="flex items-center gap-3 px-3 py-2 rounded-md mx-1"
     >
       <Avatar className="h-8 w-8 flex-shrink-0">

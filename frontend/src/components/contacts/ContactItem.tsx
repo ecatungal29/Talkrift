@@ -8,9 +8,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { UserMinus, MessageSquare } from "lucide-react";
 import type { Contact } from "@/types/contacts";
 
+const itemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.2 } },
+};
+
 interface ContactItemProps {
   contact: Contact;
-  index: number;
   onRemove: (contactId: number) => void;
   onMessage?: (userId: number) => void;
 }
@@ -24,15 +28,13 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-export function ContactItem({ contact, index, onRemove, onMessage }: ContactItemProps) {
+export function ContactItem({ contact, onRemove, onMessage }: ContactItemProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
+      variants={itemVariants}
       exit={{ opacity: 0, x: -12 }}
-      transition={{ delay: index * 0.04, duration: 0.2 }}
       className="flex items-center gap-3 px-3 py-2 rounded-md mx-1 cursor-pointer hover:bg-accent transition-colors"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

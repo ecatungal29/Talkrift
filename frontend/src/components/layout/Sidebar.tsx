@@ -165,9 +165,14 @@ export default function Sidebar() {
 			</AnimatePresence>
 
 			{/* Desktop sidebar (always visible) */}
-			<aside className="hidden md:flex flex-col w-72 flex-shrink-0 bg-sidebar border-r border-border h-screen">
+			<motion.aside
+				initial={{ x: -288, opacity: 0 }}
+				animate={{ x: 0, opacity: 1 }}
+				transition={{ type: "spring", stiffness: 260, damping: 28 }}
+				className="hidden md:flex flex-col w-72 flex-shrink-0 bg-sidebar border-r border-border h-screen"
+			>
 				{sidebarContent}
-			</aside>
+			</motion.aside>
 
 			{/* Mobile sidebar (slide in) */}
 			<AnimatePresence>

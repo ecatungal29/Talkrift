@@ -110,17 +110,22 @@ export function ContactsPanel({ searchQuery }: ContactsPanelProps) {
                   <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Requests ({incomingRequests.length})
                   </p>
-                  <AnimatePresence>
-                    {incomingRequests.map((req, i) => (
-                      <IncomingRequestItem
-                        key={req.id}
-                        request={req}
-                        index={i}
-                        onAccept={acceptRequest}
-                        onReject={rejectRequest}
-                      />
-                    ))}
-                  </AnimatePresence>
+                  <motion.div
+                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    <AnimatePresence>
+                      {incomingRequests.map((req) => (
+                        <IncomingRequestItem
+                          key={req.id}
+                          request={req}
+                          onAccept={acceptRequest}
+                          onReject={rejectRequest}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
                   <Separator className="my-2" />
                 </>
               )}
@@ -138,17 +143,22 @@ export function ContactsPanel({ searchQuery }: ContactsPanelProps) {
                   </p>
                 </div>
               ) : (
-                <AnimatePresence>
-                  {contacts.map((contact, i) => (
-                    <ContactItem
-                      key={contact.id}
-                      contact={contact}
-                      index={i}
-                      onRemove={removeContact}
-                      onMessage={handleMessage}
-                    />
-                  ))}
-                </AnimatePresence>
+                <motion.div
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+                  initial="hidden"
+                  animate="show"
+                >
+                  <AnimatePresence>
+                    {contacts.map((contact) => (
+                      <ContactItem
+                        key={contact.id}
+                        contact={contact}
+                        onRemove={removeContact}
+                        onMessage={handleMessage}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
               )}
             </motion.div>
           )}
